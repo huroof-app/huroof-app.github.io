@@ -372,5 +372,6 @@ function applause(dur){
 }
 """+h[a1:]
 
+exec(open("tools/proj_patch.py",encoding="utf-8").read())
 OUT.write_text(h, encoding="utf-8")
 print("written", len(h))
