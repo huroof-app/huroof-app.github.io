@@ -159,7 +159,7 @@ function bankName(k){if(k==="gen")return "البنك العام";var m=/^([pms])
 function renderBanks(){var ks=Object.keys(banks).sort();$("#banks").innerHTML=ks.map(function(k){return '<div class="stat"><b>'+banks[k]+'</b>'+esc(bankName(k))+'</div>';}).join("")||'<p class="muted">لا أسئلة محمّلة بعد.</p>';}
 function hash(s){var h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36);}
 function toDocs(obj){
-  var arr=Array.isArray(obj)?obj:[obj],out={};
+  var arr=[],out={};(function flat(x){if(Array.isArray(x))x.forEach(flat);else if(x)arr.push(x);})(obj);
   arr.forEach(function(b){
     if(!b||!b.questions)return;
     var stage=b.stage||"",grade=+b.grade||0,key=stage?stage+grade:"gen";

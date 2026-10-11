@@ -50,8 +50,10 @@ const fs = require('fs'), path = require('path');
   });
   await step('import bank', async () => {
     await page.click('[data-tab=bank]');
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'banks-p4-6.json'), 'utf8'));
-    await page.evaluate(d => window.__adminImport(d), data);
+    await page.setInputFiles('#b-file', path.join(__dirname, 'banks-p4-6.json'));
+    await page.waitForFunction(() => /جاهزًا للاستيراد/.test(document.querySelector('#b-msg').textContent));
+    console.log('   ', await page.textContent('#b-msg'));
+    await page.click('#b-import');
     await page.waitForFunction(() => /تم استيراد/.test(document.querySelector('#b-msg').textContent), null, { timeout: 60000 });
     const n = await page.evaluate(() => Object.keys(window.__FB.get('questions/p4')).length + Object.keys(window.__FB.get('questions/p5')).length + Object.keys(window.__FB.get('questions/p6')).length);
     console.log('   imported', n);
