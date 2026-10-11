@@ -696,11 +696,15 @@ function renderHost(){
   var on=S.letters.filter(function(L){return cov[L];}).length;
   $("b-info").textContent="«"+bankName(b)+"»: "+pool.length+" سؤالًا تغطي "+on+" من 25 حرفًا على اللوحة."+(b.stage&&on<25?" أضف أسئلة لهذا الصف من نموذج الإضافة لتكتمل التغطية.":"");
 }
+var soShow=false,soQid="";
 function renderSolo(){
   if(!S)return;
   $("so-score").innerHTML=scoreHTML(S);$("so-board").innerHTML=boardSVG(S,true);
   var q=allQ().filter(function(x){return x.id===S.qid;})[0],hq=qbarHTML(S);
-  if((S.phase==="open"||S.phase==="answer")&&q)hq+='<div class="ans"><small class="muted">الإجابة'+(q.src?' · '+esc(q.src):'')+'</small><br><b>'+esc(q.answer)+'</b>'+(q.alt?' <span class="muted">أو: '+esc(q.alt)+'</span>':'')+'</div>';
+  if(soQid!==S.qid){soQid=S.qid;soShow=false;}
+  if((S.phase==="open"||S.phase==="answer")&&q)hq+=soShow
+    ?'<div class="ans"><small class="muted">الإجابة'+(q.src?' · '+esc(q.src):'')+'</small><br><b>'+esc(q.answer)+'</b>'+(q.alt?' <span class="muted">أو: '+esc(q.alt)+'</span>':'')+'<br><button type="button" class="btn-quiet" data-soans="0">إخفاء الإجابة</button></div>'
+    :'<div class="ans"><button type="button" class="btn-quiet" data-soans="1">👁 إظهار الإجابة</button> <small class="muted">مخفية عن الطلاب · اختصار: حرف A</small></div>';
   $("so-q").innerHTML=hq;
   var c="";
   if(S.phase==="lobby")c='<div class="so-btns"><button class="btn-gold" data-act="start" type="button">ابدأ الجولة</button></div><p class="so-hint">قسّم الطلاب فريقين: الأخضر يصل اليمين باليسار، والأحمر يصل الأعلى بالأسفل.</p>';
@@ -806,6 +810,7 @@ function addDemo(){
 /* ---------- events ---------- */
 document.addEventListener("click",function(e){
   ac();
+  var sa=e.target.closest("[data-soans]");if(sa){soShow=sa.dataset.soans==="1";renderSolo();return;}
   var t=e.target.closest("[data-role],[data-act],[data-cell],[data-grant],[data-kick],[data-buzz],[data-delq],[data-pick],[data-team]");
   if(!t)return;
   if(t.dataset.role){setRole(t.dataset.role);return;}
@@ -827,6 +832,7 @@ document.addEventListener("keydown",function(e){
   var c=e.target.closest&&e.target.closest("[data-cell]");
   if(c&&(e.key==="Enter"||e.key===" ")&&(role==="host"||role==="solo")){e.preventDefault();Act.cell(+c.dataset.cell);return;}
   if(role==="solo"&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)&&S){
+    if((S.phase==="open"||S.phase==="answer")&&(e.key==="a"||e.key==="A"||e.key==="ش")){soShow=!soShow;renderSolo();return;}
     if(S.phase==="open"&&(e.key==="ArrowRight"||e.key==="g"||e.key==="G")){Act.team("g");return;}
     if(S.phase==="open"&&(e.key==="ArrowLeft"||e.key==="r"||e.key==="R")){Act.team("r");return;}
     if(S.phase==="answer"&&(e.key==="Enter"||e.key==="y"||e.key==="Y")){Act.right();return;}

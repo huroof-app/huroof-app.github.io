@@ -319,5 +319,20 @@ auth.onAuthStateChanged(function(u){
 '''
 h = h[:start] + BOOT + h[end:]
 
+
+# ---- teacher mode: hide answer until the teacher reveals it (screen is projected) ----
+rep("""  if((S.phase==="open"||S.phase==="answer")&&q)hq+='<div class="ans"><small class="muted">الإجابة'+(q.src?' · '+esc(q.src):'')+'</small><br><b>'+esc(q.answer)+'</b>'+(q.alt?' <span class="muted">أو: '+esc(q.alt)+'</span>':'')+'</div>';""",
+"""  if(soQid!==S.qid){soQid=S.qid;soShow=false;}
+  if((S.phase==="open"||S.phase==="answer")&&q)hq+=soShow
+    ?'<div class="ans"><small class="muted">الإجابة'+(q.src?' · '+esc(q.src):'')+'</small><br><b>'+esc(q.answer)+'</b>'+(q.alt?' <span class="muted">أو: '+esc(q.alt)+'</span>':'')+'<br><button type="button" class="btn-quiet" data-soans="0">إخفاء الإجابة</button></div>'
+    :'<div class="ans"><button type="button" class="btn-quiet" data-soans="1">👁 إظهار الإجابة</button> <small class="muted">مخفية عن الطلاب · اختصار: حرف A</small></div>';""")
+rep("function renderSolo(){","var soShow=false,soQid=\"\";\nfunction renderSolo(){")
+rep("""  var t=e.target.closest("[data-role],[data-act],[data-cell],[data-grant],[data-kick],[data-buzz],[data-delq],[data-pick],[data-team]");""",
+"""  var sa=e.target.closest("[data-soans]");if(sa){soShow=sa.dataset.soans==="1";renderSolo();return;}
+  var t=e.target.closest("[data-role],[data-act],[data-cell],[data-grant],[data-kick],[data-buzz],[data-delq],[data-pick],[data-team]");""")
+rep("""    if(S.phase==="open"&&(e.key==="ArrowRight"||e.key==="g"||e.key==="G")){Act.team("g");return;}""",
+"""    if((S.phase==="open"||S.phase==="answer")&&(e.key==="a"||e.key==="A"||e.key==="ش")){soShow=!soShow;renderSolo();return;}
+    if(S.phase==="open"&&(e.key==="ArrowRight"||e.key==="g"||e.key==="G")){Act.team("g");return;}""")
+
 OUT.write_text(h, encoding="utf-8")
 print("written", len(h))
