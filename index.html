@@ -667,8 +667,19 @@ function bankPool(b){
 }
 function bankName(b){return !b||!b.stage?"البنك العام":"الصف "+ORD[b.grade]+" "+STAGE[b.stage]+(+b.term?" · الفصل "+ORD[b.term]:" · كل الفصول")+(b.subj?" · "+b.subj:" · كل المواد");}
 function qTag(q){return q.stage?"الصف "+ORD[q.grade]+" "+STAGE[q.stage]+" · ف"+q.term:"عام";}
+function poolFor(b,L){return bankPool(b).filter(function(q){return q.letter===L;});}
+function pickLetters(b){
+  var cov={};bankPool(b).forEach(function(q){cov[q.letter]=(cov[q.letter]||0)+1;});
+  var has=shuffle(LETTERS.filter(function(L){return cov[L];})),not=shuffle(LETTERS.filter(function(L){return !cov[L];}));
+  if(has.length<10)return shuffle(LETTERS).slice(0,25);
+  return shuffle(has.slice(0,25).concat(not).slice(0,25));
+}
 function drawQuestion(st,general){
-  var L=st.letters[st.cell],pool=bankPool(general?null:st.bank).filter(function(q){return q.letter===L;});
+  var L=st.letters[st.cell],b=st.bank||{},pool=general?poolFor(null,L):poolFor(b,L);
+  if(!general&&!pool.length&&b.stage){
+    var tries=[{stage:b.stage,grade:b.grade,term:0,subj:b.subj},{stage:b.stage,grade:b.grade,term:b.term,subj:""},{stage:b.stage,grade:b.grade,term:0,subj:""},null];
+    for(var ti=0;ti<tries.length&&!pool.length;ti++)pool=poolFor(tries[ti],L);
+  }
   var freshQ=pool.filter(function(q){return st.used.indexOf(q.id)<0;});
   st.answering="";st.ansTeam="";st.tried=[];
   if(!pool.length){st.phase="noq";st.qid="";st.qtext="";return st;}
@@ -679,7 +690,7 @@ function drawQuestion(st,general){
   return st;
 }
 var Act={
-  start:function(){var n=clone(S);n.phase="pick";commit(n);},
+  start:function(){var n=clone(S);if(n.owner.every(function(o){return !o;}))n.letters=pickLetters(n.bank);n.phase="pick";commit(n);},
   cell:function(i){if(!S||S.phase!=="pick"||S.owner[i])return;var n=clone(S);n.cell=i;commit(drawQuestion(n));},
   grant:function(pid){var p=pById(pid);if(!p||S.phase!=="open")return;var n=clone(S);n.phase="answer";n.answering=p.id;n.ansTeam=p.team;fx(n,"buzz");commit(n);},
   team:function(t){if(!S||S.phase!=="open"||(S.openTo!=="all"&&S.openTo!==t))return;var n=clone(S);n.phase="answer";n.answering="team-"+t;n.ansTeam=t;fx(n,"buzz");commit(n);},
@@ -697,7 +708,7 @@ var Act={
   swap:function(){var n=clone(S);commit(drawQuestion(n));},
   swapgen:function(){var n=clone(S);commit(drawQuestion(n,true));},
   skip:function(){var n=clone(S);n.phase="pick";n.pickN++;n.cell=-1;n.answering="";n.ansTeam="";commit(n);},
-  nextround:function(){var n=clone(S);n.round++;n.letters=shuffle(LETTERS).slice(0,25);n.owner=new Array(25).fill("");n.turn=other(n.winner||n.turn);n.winner="";n.cell=-1;n.phase="pick";n.pickN++;commit(n);},
+  nextround:function(){var n=clone(S);n.round++;n.letters=pickLetters(n.bank);n.owner=new Array(25).fill("");n.turn=other(n.winner||n.turn);n.winner="";n.cell=-1;n.phase="pick";n.pickN++;commit(n);},
   newmatch:function(){commit(freshState(S));},
   undo:function(){if(!prevStack.length)return;var p=prevStack.pop();p.fx={t:"",n:S.fx.n};commit(p,true);},
   kickall:function(){players.forEach(function(p){Store.delPlayer(p.id);});}
@@ -1018,6 +1029,7 @@ function setBank(){
   if(!S)return;var st=$("b-stage").value;fillGrades($("b-grade"),st);
   var n=clone(S);n.bank={stage:st,grade:st?+$("b-grade").value||1:1,term:st?+$("b-term").value||0:0,subj:st?$("b-subj").value||"":""};
   if(!S.bank||n.bank.stage!==S.bank.stage||n.bank.grade!==S.bank.grade)n.bank.subj="";
+  if(n.owner.every(function(o){return !o;})&&n.phase!=="open"&&n.phase!=="answer")setTimeout(function(){if(S&&S.owner.every(function(o){return !o;})&&S.phase!=="open"&&S.phase!=="answer"){var m=clone(S);m.letters=pickLetters(m.bank);commit(m,true);}},1500);
   commit(n,true);
 }
 ["b-stage","b-grade","b-term","b-subj"].forEach(function(id){$(id).addEventListener("change",setBank);});
@@ -1025,6 +1037,7 @@ function setBankSolo(){
   if(!S)return;var st=$("so-stage").value;fillGrades($("so-grade"),st);
   var n=clone(S);n.bank={stage:st,grade:st?+$("so-grade").value||1:1,term:st?+$("so-term").value||0:0,subj:st?$("so-subj").value||"":""};
   if(!S.bank||n.bank.stage!==S.bank.stage||n.bank.grade!==S.bank.grade)n.bank.subj="";
+  if(n.owner.every(function(o){return !o;})&&n.phase!=="open"&&n.phase!=="answer")setTimeout(function(){if(S&&S.owner.every(function(o){return !o;})&&S.phase!=="open"&&S.phase!=="answer"){var m=clone(S);m.letters=pickLetters(m.bank);commit(m,true);}},1500);
   commit(n,true);
 }
 ["so-stage","so-grade","so-term","so-subj"].forEach(function(id){$(id).addEventListener("change",setBankSolo);});
