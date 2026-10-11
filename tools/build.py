@@ -334,5 +334,43 @@ rep("""    if(S.phase==="open"&&(e.key==="ArrowRight"||e.key==="g"||e.key==="G")
 """    if((S.phase==="open"||S.phase==="answer")&&(e.key==="a"||e.key==="A"||e.key==="ش")){soShow=!soShow;renderSolo();return;}
     if(S.phase==="open"&&(e.key==="ArrowRight"||e.key==="g"||e.key==="G")){Act.team("g");return;}""")
 
+
+# ---- clearer applause: many distinct clappers, band-filtered, panned, normalised (no clipping) ----
+a0=h.index("function applause(dur){"); a1=h.index("function tone(type,f,start,dur,vol){")
+h=h[:a0]+"""function applauseBuffers(a,dur){
+  var sr=a.sampleRate,n=Math.floor(sr*dur),bands=[700,1100,1600,2300],out=[];
+  for(var b=0;b<bands.length;b++){
+    var buf=a.createBuffer(2,n,sr),L=buf.getChannelData(0),R=buf.getChannelData(1),people=5;
+    for(var p=0;p<people;p++){
+      var rate=3.2+Math.random()*2.4,pan=Math.random(),t=Math.random()*0.25,gainP=0.6+Math.random()*0.4;
+      while(t<dur){
+        var env=t<0.35?t/0.35:(t>dur-1.4?Math.max(0,(dur-t)/1.4):1);
+        var st=Math.floor(t*sr),len=Math.floor(sr*0.03),tau=sr*(0.004+Math.random()*0.004),amp=gainP*env*(0.7+Math.random()*0.3);
+        for(var j=0;j<len&&st+j<n;j++){var v=(Math.random()*2-1)*amp*(j<sr*0.0008?j/(sr*0.0008):Math.exp(-(j-sr*0.0008)/tau));L[st+j]+=v*(1-pan);R[st+j]+=v*pan;}
+        t+=1/rate*(0.85+Math.random()*0.3);
+      }
+    }
+    var pk=0;for(var i=0;i<n;i++){pk=Math.max(pk,Math.abs(L[i]),Math.abs(R[i]));}
+    if(pk>0){var k=0.9/pk;for(i=0;i<n;i++){L[i]*=k;R[i]*=k;}}
+    out.push({buf:buf,f:bands[b]});
+  }
+  return out;
+}
+function applause(dur){
+  var a=ac();if(!a)return;
+  var hp=a.createBiquadFilter();hp.type="highpass";hp.frequency.value=280;
+  var lp=a.createBiquadFilter();lp.type="lowpass";lp.frequency.value=6500;
+  var comp=a.createDynamicsCompressor();comp.threshold.value=-18;comp.knee.value=12;comp.ratio.value=4;comp.attack.value=0.003;comp.release.value=0.15;
+  var master=a.createGain();master.gain.value=1.1;
+  hp.connect(lp);lp.connect(comp);comp.connect(master);master.connect(a.destination);
+  applauseBuffers(a,dur).forEach(function(x){
+    var src=a.createBufferSource();src.buffer=x.buf;
+    var bp=a.createBiquadFilter();bp.type="bandpass";bp.frequency.value=x.f;bp.Q.value=1.1;
+    var g=a.createGain();g.gain.value=1.0;
+    src.connect(bp);bp.connect(g);g.connect(hp);src.start();
+  });
+}
+"""+h[a1:]
+
 OUT.write_text(h, encoding="utf-8")
 print("written", len(h))
