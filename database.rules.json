@@ -1,0 +1,78 @@
+{
+  "rules": {
+    "admins": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'a0545777031@gmail.com' || root.child('admins/'+auth.uid).val() === true)",
+        ".write": "auth != null && (auth.token.email == 'a0545777031@gmail.com' || root.child('admins/'+auth.uid).val() === true)"
+      }
+    },
+    "users": {
+      ".read": "auth != null && (auth.token.email == 'a0545777031@gmail.com' || root.child('admins/'+auth.uid).val() === true)",
+      ".write": "auth != null && (auth.token.email == 'a0545777031@gmail.com' || root.child('admins/'+auth.uid).val() === true)",
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "email": {
+          ".write": "auth != null && auth.uid == $uid && !data.exists()",
+          ".validate": "newData.isString() && newData.val().length < 200"
+        },
+        "name": {
+          ".write": "auth != null && auth.uid == $uid",
+          ".validate": "newData.isString() && newData.val().length < 80"
+        },
+        "createdAt": {
+          ".write": "auth != null && auth.uid == $uid && !data.exists()"
+        },
+        "room": {
+          ".write": "auth != null && auth.uid == $uid",
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9]{6}$/)"
+        }
+      }
+    },
+    "questions": {
+      ".read": "auth != null && (auth.token.email == 'a0545777031@gmail.com' || root.child('admins/'+auth.uid).val() === true || (root.child('users/'+auth.uid+'/expiresAt').val() > now && root.child('users/'+auth.uid+'/blocked').val() != true))",
+      ".write": "auth != null && (auth.token.email == 'a0545777031@gmail.com' || root.child('admins/'+auth.uid).val() === true)"
+    },
+    "custom": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "rooms": {
+      "$room": {
+        ".read": true,
+        "host": {
+          ".write": "auth != null && (!data.exists() || data.val() == auth.uid)",
+          ".validate": "newData.isString()"
+        },
+        "state": {
+          ".write": "auth != null && (data.parent().child('host').val() == auth.uid || newData.parent().child('host').val() == auth.uid) && (auth.token.email == 'a0545777031@gmail.com' || root.child('admins/'+auth.uid).val() === true || root.child('users/'+auth.uid+'/expiresAt').val() > now)"
+        },
+        "players": {
+          ".write": "auth != null && data.parent().child('host').val() == auth.uid",
+          "$pid": {
+            ".write": true,
+            ".validate": "!newData.exists() || (newData.child('name').isString() && newData.child('name').val().length <= 30 && (newData.child('team').val() == 'g' || newData.child('team').val() == 'r'))"
+          }
+        },
+        "locks": {
+          ".write": "auth != null && data.parent().child('host').val() == auth.uid",
+          "$k": {
+            ".write": "!data.exists()",
+            ".validate": "newData.isString() && newData.val().length < 40"
+          }
+        }
+      }
+    },
+    "activity": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'a0545777031@gmail.com' || root.child('admins/'+auth.uid).val() === true)",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "subs": {
+      ".read": "auth != null && (auth.token.email == 'a0545777031@gmail.com' || root.child('admins/'+auth.uid).val() === true)",
+      ".write": "auth != null && (auth.token.email == 'a0545777031@gmail.com' || root.child('admins/'+auth.uid).val() === true)"
+    }
+  }
+}
